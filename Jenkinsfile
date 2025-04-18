@@ -54,6 +54,7 @@ pipeline {
                             set -x  # 명령어 실행 로깅 활성화
                             curl -v "https://jsonplaceholder.typicode.com/todos/${endpoint}" > test.json || exit 1
                             ls -l test.json
+                            pwd
                             cat test.json
                         """
                     } catch (Exception e) {
@@ -70,13 +71,24 @@ pipeline {
                 script {
                     try {
                         sh """
-                            set -x  # 명령어 실행 로깅 활성화
+                            set -x
+                            # Git 설정
                             git config --global user.email "snoopyjch@gmail.com"
                             git config --global user.name "admin"
-                            git status
+                            
+                            # 브랜치 확인 및 설정
+                            git branch -a
+                            git checkout main || git checkout -b main
+                            
+                            # 변경사항 커밋
                             git add test.json
                             git commit -m "Update test.json with new data"
-                            git push origin main
+                            
+                            # 원격 저장소 설정 확인
+                            git remote -v
+                            
+                            # 푸시
+                            git push -u origin main
                         """
                     } catch (Exception e) {
                         echo "Error in Commit and Push stage: ${e.message}"
@@ -103,6 +115,10 @@ pipeline {
                 ls -la
                 echo "Git status:"
                 git status || true
+                echo "Git branches:"
+                git branch -a || true
+                echo "Git remotes:"
+                git remote -v || true
             """
         }
     }
