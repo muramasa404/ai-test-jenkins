@@ -2,27 +2,35 @@ pipeline {
     agent any
     
     triggers {
-        pollSCM('H/5 * * * *')  // 5분마다 GitHub 변경사항 확인
+        pollSCM('H/5 * * * *')
     }
     
     stages {
         stage('Collect Data') {
             steps {
                 script {
-                    // 현재 시간 가져오기
-                    def currentHour = new Date().format('HH')
-                    def currentMinute = new Date().format('mm')
-                    
-                    // API 엔드포인트 계산
-                    def endpoint = (currentMinute.toInteger() + 1).toString()
-                    if (endpoint.toInteger() > 60) {
-                        endpoint = "1"
+                    try {
+                        def currentHour = new Date().format('HH')
+                        def currentMinute = new Date().format('mm')
+                        
+                        echo "Current time: ${currentHour}:${currentMinute}"
+                        
+                        def endpoint = (currentMinute.toInteger() + 1).toString()
+                        if (endpoint.toInteger() > 60) {
+                            endpoint = "1"
+                        }
+                        
+                        echo "Calculated endpoint: ${endpoint}"
+                        
+                        sh """
+                            curl -v "https://jsonplaceholder.typicode.com/todos/${endpoint}" > test.json
+                            cat test.json
+                        """
+                    } catch (Exception e) {
+                        echo "Error in Collect Data stage: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
                     }
-                    
-                    // API 호출 및 JSON 저장
-                    sh """
-                        curl -s "https://jsonplaceholder.typicode.com/todos/${endpoint}" > test.json
-                    """
                 }
             }
         }
@@ -30,18 +38,20 @@ pipeline {
         stage('Commit and Push') {
             steps {
                 script {
-                    // Git 설정
-                    sh """
-                        git config --global user.email "jenkins@example.com"
-                        git config --global user.name "Jenkins"
-                    """
-                    
-                    // 변경사항 커밋 및 푸시
-                    sh """
-                        git add test.json
-                        git commit -m "Update test.json with new data"
-                        git push origin main
-                    """
+                    try {
+                        sh """
+                            git config --global user.email "snoopyjch@gmail.com"
+                            git config --global user.name "admin"
+                            git status
+                            git add test.json
+                            git commit -m "Update test.json with new data"
+                            git push origin main
+                        """
+                    } catch (Exception e) {
+                        echo "Error in Commit and Push stage: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
                 }
             }
         }
@@ -49,8 +59,10 @@ pipeline {
     
     post {
         always {
-            // 빌드 후 정리 작업
             cleanWs()
+        }
+        failure {
+            echo "Pipeline failed. Check the logs for more details."
         }
     }
 } 
