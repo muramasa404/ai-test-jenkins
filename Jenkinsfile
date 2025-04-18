@@ -65,61 +65,6 @@ pipeline {
                 }
             }
         }
-        
-        stage('Commit and Push') {
-            steps {
-                script {
-                    try {
-                        sh """
-                            set -x
-                            # Git 설정
-                            git config --global user.email "snoopyjch@gmail.com"
-                            git config --global user.name "admin"
-                            
-                            # 브랜치 확인 및 설정
-                            git branch -a
-                            git checkout main || git checkout -b main
-                            
-                            # 변경사항 커밋
-                            git add test.json
-                            git commit -m "Update test.json with new data"
-                            
-                            # 원격 저장소 설정 확인
-                            git remote -v
-                            
-                            # 푸시
-                            git push -u origin main
-                        """
-                    } catch (Exception e) {
-                        echo "Error in Commit and Push stage: ${e.message}"
-                        currentBuild.result = 'FAILURE'
-                        throw e
-                    }
-                }
-            }
-        }
-    }
-    
-    post {
-        always {
-            echo "Pipeline completed with status: ${currentBuild.currentResult}"
-            cleanWs()
-        }
-        failure {
-            echo "Pipeline failed. Check the logs for more details."
-            // 실패 시 추가 디버깅 정보
-            sh """
-                echo "Current directory:"
-                pwd
-                echo "Files in workspace:"
-                ls -la
-                echo "Git status:"
-                git status || true
-                echo "Git branches:"
-                git branch -a || true
-                echo "Git remotes:"
-                git remote -v || true
-            """
-        }
+      
     }
 } 
